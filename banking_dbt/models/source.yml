@@ -1,0 +1,9 @@
+sources:
+  - name: banking
+    database: BANKING_PROJECT
+    schema: RAW
+
+    tables:
+      - name: customers
+      - name: accounts
+      - name: transactions

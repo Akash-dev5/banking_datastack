@@ -9,30 +9,3 @@ faker
 psycopg2
 pylance
 astronomer-cosmos
-
-kafka_ui =  http://localhost:8084/
-
-airflow_ui = http://localhost:8080/
-
-https://app.snowflake.com/ap-southeast-7.aws/le75852/#/workspaces/ws/USER%24/PUBLIC/DEFAULT%24/banking.sql/
-
-#RUN in terminal to generate a new fernet key
-#python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# What is airflow fernet key?
-# Airflow uses Fernet encryption to encrypt sensitive information stored in its metadata database,
-# especially things such as connection passwords and other credentials.
-# (Generate fernet key once and keep the same value in your .env, Because Airflow needs the same key to decrypt data
-# that it previously encrypted. If you change the key later, Airflow may no longer be able to decrypt existing encrypted credentials.)
-
-
-
-# We running Kafka in KRaft mode,and the Confluent cp-kafka Docker image requires a clusterID
-# for a KRaft cluster. Confluent's current documentation explicitly shows clusterID as
-# required in this configuration.
-
-# #RUN THIS COMMAND IN TERMINAL TO GENERATE A RANDOM clusterID FOR KRaft MODE
-# docker run --rm confluentinc/cp-kafka:7.7.0 kafka-storage random-uuid
-
-
-

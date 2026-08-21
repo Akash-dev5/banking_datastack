@@ -26,8 +26,10 @@ postgres/data/
 # Airflow
 airflow/airflow-postgres/
 airflow/logs/
-airflow/requirements.txt
 
 # IDE
 .vscode/
 .idea/
+
+
+INFO/

@@ -34,3 +34,24 @@ jobs:
         run: |
           python -m compileall airflow/dags
 
+        
+      - name: Validate dbt project
+        working-directory: banking_dbt
+        run: |
+          dbt --version
+          dbt parse
+        
+      - name: Build Airflow image
+        run: |
+          docker build \
+            -t banking-airflow-ci \
+            -f airflow/Dockerfile \
+            .
+
+      - name: Validate Airflow DAGs
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/airflow/dags:/opt/airflow/dags \
+            -v ${{ github.workspace }}/banking_dbt:/home/airflow/banking_dbt \
+            banking-airflow-ci \
+            airflow dags list

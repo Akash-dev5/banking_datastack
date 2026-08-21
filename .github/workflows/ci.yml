@@ -68,11 +68,51 @@ jobs:
             -t banking-airflow-ci \
             -f airflow/Dockerfile \
             .
+            
+      - name: Create Docker network
+        run: |
+          docker network create airflow-ci
+
+      - name: Start Airflow metadata database
+        run: |
+          docker run --d \
+            --name airflow-postgres-ci \
+            --network airflow-ci \
+            -e POSTGRES_PASSWORD=airflow \
+            -e POSTGRES_USER=airflow \
+            -e POSTGRES_DB=airflow \
+            postgres:16
+
+      - name: Wait for PostgreSQL
+        run: |
+          until docker exec airflow-postgres-ci pg_isready -U airflow -d airflow; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+
+      - name: Initialize Airflow metadata database
+        run: |
+          docker run --rm \
+            --network airflow-ci \
+            -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres-ci:5432/airflow \
+            -v ${{ github.workspace }}/airflow/dags:/opt/airflow/dags \
+            -v ${{ github.workspace }}/banking_dbt:/home/airflow/banking_dbt \
+            banking-airflow-ci \
+            airflow db migrate
+
 
       - name: Validate Airflow DAGs
         run: |
           docker run --rm \
+            --network airflow-ci \
+            -e AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres-ci:5432/airflow \
             -v ${{ github.workspace }}/airflow/dags:/opt/airflow/dags \
             -v ${{ github.workspace }}/banking_dbt:/home/airflow/banking_dbt \
             banking-airflow-ci \
             airflow dags list
+
+      - name: Cleanup CI containers
+        if: always()
+        run: |
+          docker rm -f airflow-postgres-ci || true
+          docker network rm airflow-ci || true

@@ -75,7 +75,7 @@ jobs:
 
       - name: Start Airflow metadata database
         run: |
-          docker run --d \
+          docker run -d \
             --name airflow-postgres-ci \
             --network airflow-ci \
             -e POSTGRES_PASSWORD=airflow \

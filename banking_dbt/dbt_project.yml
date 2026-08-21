@@ -29,8 +29,8 @@ models:
       +materialized: table
 
     OBT:
-    +schema:  OBT
-    +materialized: table
+      +schema: OBT
+      +materialized: table
 
 snapshots:
   banking_dbt:

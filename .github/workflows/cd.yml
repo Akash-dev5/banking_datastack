@@ -33,4 +33,7 @@ jobs:
           context: .
           file: ./airflow/Dockerfile
           push: true
-          tags: ghcr.io/akash-dev5/banking-airflow:latest
+          tags: |
+            ghcr.io/akash-dev5/banking-airflow:latest
+            ghcr.io/akash-dev5/banking-airflow:${{ github.sha }}
+                

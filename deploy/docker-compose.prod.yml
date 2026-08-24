@@ -1,7 +1,7 @@
 x-airflow-common:
   &airflow-common
   image: ghcr.io/akash-dev5/banking-airflow:${AIRFLOW_IMAGE_TAG}
-  restart: unless-stopped
+
 
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor

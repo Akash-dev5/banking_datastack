@@ -4,7 +4,7 @@ USER airflow
 
 RUN pip install --no-cache-dir \
     "apache-airflow-providers-fab" \
-    "astronomer-cosmos>=1.10.0"
+    "astronomer-cosmos==1.11.1"
 
 RUN python -m venv /home/airflow/dbt_venv
 

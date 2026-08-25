@@ -14,6 +14,8 @@ x-airflow-common:
     AIRFLOW__FAB__SESSION_BACKEND: securecookie
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
 
+  volumes:
+    - ./dbt/.dbt:/home/airflow/banking_dbt/.dbt:ro
 
 x-airflow-dependencies:
   &airflow-dependencies

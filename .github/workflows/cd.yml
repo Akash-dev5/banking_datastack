@@ -1,6 +1,5 @@
 name: CD
 
-
 on:
   workflow_run:
     workflows: [CI]
@@ -15,17 +14,19 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
-            registry: ghcr.io
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Airflow image
         uses: docker/build-push-action@v7
@@ -35,5 +36,15 @@ jobs:
           push: true
           tags: |
             ghcr.io/akash-dev5/banking-airflow:latest
-            ghcr.io/akash-dev5/banking-airflow:${{ github.sha }}
-                
+            ghcr.io/akash-dev5/banking-airflow:${{ github.event.workflow_run.head_sha }}
+
+      - name: Deploy Airflow to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/banking_datastack/deploy
+            chmod +x ec2-deploy.sh
+            ./ec2-deploy.sh ${{ github.event.workflow_run.head_sha }}

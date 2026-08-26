@@ -31,5 +31,6 @@ airflow/logs/
 .vscode/
 .idea/
 
+deploy/.env.example
 
 INFO.txt

@@ -26,4 +26,6 @@ banking_dbt/dbt_packages
 banking_dbt/logs/
 
 
+deploy/.env.example
+
 INFO.txt

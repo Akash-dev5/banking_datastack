@@ -8,4 +8,6 @@ snowflake-connector-python
 faker
 psycopg2
 pylance
+
 astronomer-cosmos
+apache-airflow-providers-amazon

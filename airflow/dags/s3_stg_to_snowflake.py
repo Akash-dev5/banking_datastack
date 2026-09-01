@@ -1,13 +1,16 @@
-import snowflake.connector
-import logging
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, Asset, AssetWatcher
+from airflow.providers.amazon.aws.triggers.sqs import SqsSensorTrigger
+
 from datetime import datetime, timedelta
 from airflow.hooks.base import BaseHook
 
+import logging
 
 logger = logging.getLogger(__name__)
 
 def get_snowflake_connection():
+    import snowflake.connector #Airflow recommends keeping expensive imports and other heavy work out of top-level DAG code.
+
     sf_conn = BaseHook.get_connection("snowflake_conn")
     extra = sf_conn.extra_dejson
 
@@ -43,9 +46,32 @@ def copy_table(table_name):
         cursor.close()
         snowflake_conn.close()
 
+
+banking_s3_asset = Asset(
+    name="banking_s3_data",
+    uri="s3://snowflake-banking-datav1",
+    watchers=[
+        AssetWatcher(
+            name="banking_s3_data_watcher",
+            trigger=SqsSensorTrigger(
+                sqs_queue="banking-s3-events",
+                aws_conn_id=None,
+                max_messages=5,
+                wait_time_seconds=20,
+                delete_message_on_reception=True,
+                region_name="us-east-1",
+            ),
+        )
+    ],
+)
+
+snowflake_raw_loaded = Asset(
+    name="snowflake_raw_table_loaded",
+)
+
 @dag(
     dag_id="s3_stg_to_snowflake",
-    schedule="@hourly",
+    schedule=[banking_s3_asset],
     start_date=datetime(2023, 1, 1),
     catchup=False,
     default_args={
@@ -57,7 +83,7 @@ def copy_table(table_name):
 )
 
 
-def s3_to_snowflake():
+def s3_stg_to_snowflake():
 
 
     @task
@@ -72,10 +98,16 @@ def s3_to_snowflake():
     def load_transactions():
         copy_table("transactions")
 
+    @task(outlets=[snowflake_raw_loaded])
+    def raw_tables_loaded():
+        logger.info("All RAW Snowflake tables loaded successfully.")
 
-    load_customers()
-    load_accounts()
-    load_transactions()
+    customers = load_customers()
+    accounts = load_accounts()
+    transactions = load_transactions()
 
+    completed = raw_tables_loaded()
 
-s3_to_snowflake()
+    [customers, accounts, transactions] >> completed
+
+s3_stg_to_snowflake()

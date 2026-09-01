@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from airflow.sdk import dag
+from airflow.sdk import dag, Asset
 from cosmos import (DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig)
 
 DBT_PROJECT_PATH = Path("/home/airflow/banking_dbt")
@@ -9,11 +9,17 @@ DBT_PROFILES_PATH = DBT_PROJECT_PATH / ".dbt" / "profiles.yml"
 DBT_EXECUTABLE = "/home/airflow/dbt_venv/bin/dbt"
 
 
+snowflake_raw_loaded = Asset(
+    name="snowflake_raw_table_loaded",
+)
+
+
 @dag(
     dag_id="banking_dbt_pipeline",
     start_date=datetime(2023, 1, 1),
-    schedule="@daily",
+    schedule=[snowflake_raw_loaded],
     catchup=False,
+    max_active_runs=1,
     tags=["banking", "dbt", "snowflake"],
 )
 
@@ -39,8 +45,3 @@ def banking_dbt_pipeline():
     )
 
 banking_dbt_pipeline()
-
-#DbtTaskGroup  It converts the dbt project's DAG into Airflow tasks while preserving the dbt dependencies.
-#ProjectConfig   It tells cosmos where the dbt project is. (dbt_project.yml is the main configuration file for the dbt project.)
-#ProfileConfig  It cosmos which dbt profile to use.
-#ExecutionConfig   It tells cosmos "When you need to execute dbt, use this particular dbt executable.

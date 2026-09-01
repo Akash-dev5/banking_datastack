@@ -6,19 +6,13 @@ from datetime import datetime, timezone
 import os
 import tempfile
 import logging
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
-
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format="%(asctime)s - %(levelname)s - %(message)s"
-# )
 
 logger = logging.getLogger(__name__)
-# -----------------------------
-# Load secrets from .env
-# -----------------------------
-load_dotenv()
+
+
+#load_dotenv()
 
 # Kafka consumer settings
 consumer = KafkaConsumer(
@@ -88,25 +82,90 @@ def upload_to_s3(table_name, records):
             os.remove(file_path)
 
 # Batch consume
-batch_size = 50
+
+BATCH_TARGETS = {
+    'banking_server.public.customers': 50,
+    'banking_server.public.accounts': 100,
+    'banking_server.public.transactions': 250
+}
+
 buffer = {
     'banking_server.public.customers': [],
     'banking_server.public.accounts': [],
     'banking_server.public.transactions': []
 }
 
-print("✅ Connected to Kafka. Listening for messages...")
+logger.info("Connected to Kafka. Listening for messages...")
 
 for message in consumer:
     topic = message.topic
     event = message.value
     payload = event.get("payload", {})
-    record = payload.get("after")  # Only take the actual row
+    record = payload.get("after")  
 
+    # Only take the actual row
     if record:
         buffer[topic].append(record)
-        print(f"[{topic}] -> {record}")  # Debugging
+        logger.info("[%s] -> %s", topic, record)
+        
+    
+    batch_complete = all(
+        len(buffer[t]) >= BATCH_TARGETS[t]
+        for t in BATCH_TARGETS
+    )
 
-    if len(buffer[topic]) >= batch_size:
-        upload_to_s3(topic.split('.')[-1], buffer[topic])
-        buffer[topic] = []
+
+    if batch_complete:
+        logger.info("Complete batch received. Uploading to S3...")
+
+        # Upload customers
+        upload_to_s3(
+            "customers",
+            buffer["banking_server.public.customers"]
+        )
+
+        # Upload accounts
+        upload_to_s3(
+            "accounts",
+            buffer["banking_server.public.accounts"]
+        )
+
+        # Upload transactions
+        upload_to_s3(
+            "transactions",
+            buffer["banking_server.public.transactions"]
+        )
+
+
+        #Clear buffer for next batch
+        for topic in buffer:
+            buffer[topic] = []
+
+
+
+        #------Create batch-complete marker------
+
+
+        batch_id = datetime.now(timezone.utc).strftime(
+            "%Y%m%d_%H%M%S%f"
+        )
+
+        marker_key = (
+            f"_batch_complete/"
+            f"batch_{batch_id}.done"
+        )
+
+        s3_client.put_object(
+            Bucket=bucket,
+            Key=marker_key,
+            Body=b""
+        )
+
+        logger.info(
+            "✅ COMPLETE BATCH uploaded. "
+            "Marker created: s3://%s/%s",
+            bucket,
+            marker_key
+        )
+
+        logger.info("Batch complete: %s", marker_key)

@@ -17,6 +17,11 @@ x-airflow-common:
             AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
             AIRFLOW__FAB__SESSION_BACKEND: securecookie
             AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
+
+            AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+            AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+            AWS_DEFAULT_REGION: ${S3_REGION}
+            
         volumes:
             - ./airflow/dags:/opt/airflow/dags
             - ./airflow/logs:/opt/airflow/logs
@@ -79,6 +84,20 @@ services:
             KEY_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
             VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
             
+
+    consumer:
+        build:
+            context: .
+            dockerfile: services/consumer/Dockerfile
+        container_name: consumer
+        restart: unless-stopped
+        depends_on:
+            kafka:
+                condition: service_healthy
+            kafka-connect:
+                condition: service_started
+        env_file:
+            - .env
 
 
     kafka:
@@ -189,3 +208,7 @@ services:
     airflow-dag-processor:
         <<: *airflow-common
         command: dag-processor
+
+    airflow-triggerer:
+        <<: *airflow-common
+        command: triggerer

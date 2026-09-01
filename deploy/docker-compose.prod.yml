@@ -14,6 +14,10 @@ x-airflow-common:
     AIRFLOW__FAB__SESSION_BACKEND: securecookie
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
 
+    AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+    AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+    AWS_DEFAULT_REGION: ${S3_REGION}
+
   volumes:
     - ./dbt/.dbt:/home/airflow/banking_dbt/.dbt:ro
 
@@ -45,6 +49,7 @@ services:
       retries: 5
       start_period: 20s
 
+  
   airflow-init:
     <<: *airflow-common
 
@@ -84,6 +89,11 @@ services:
     container_name: banking-airflow-dag-processor
     <<: [*airflow-common, *airflow-dependencies]
     command: dag-processor
+
+  airflow-triggerer:
+    container_name: banking-airflow-triggerer
+    <<: [*airflow-common, *airflow-dependencies]
+    command: triggerer
 
 volumes:
   airflow_postgres_data:

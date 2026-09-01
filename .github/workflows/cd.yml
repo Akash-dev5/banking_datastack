@@ -61,6 +61,13 @@ jobs:
           target: "/home/ubuntu/banking_datastack/deploy"
           overwrite: true
 
+      - name: Show deployment commit
+        run: |
+          echo "Current GitHub SHA: $GITHUB_SHA"
+          echo "Workflow run head SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Workflow run number: ${{ github.event.workflow_run.run_number }}"
 
       - name: Deploy Airflow to EC2
         uses: appleboy/ssh-action@v1.2.2

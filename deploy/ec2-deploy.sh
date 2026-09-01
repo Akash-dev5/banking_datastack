@@ -10,7 +10,7 @@ if [ -z "$IMAGE_TAG" ]; then
     exit 1
 fi
 
-echo "🚀 Deploying Airflow image: $IMAGE_TAG"
+echo "Deploying Airflow image: $IMAGE_TAG"
 
 echo "Updating AIRFLOW_IMAGE_TAG..."
 
